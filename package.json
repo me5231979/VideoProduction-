@@ -14,6 +14,8 @@
     "produce": "node --import tsx/esm src/cli.ts produce",
     "script": "node --import tsx/esm src/cli.ts script",
     "narrate": "node --import tsx/esm src/cli.ts narrate",
+    "batch": "node --import tsx/esm src/cli.ts batch",
+    "ledger": "node --import tsx/esm src/cli.ts ledger",
     "upload": "node --import tsx/esm src/cli.ts upload"
   },
   "dependencies": {

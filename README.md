@@ -49,34 +49,57 @@ final.mp4
 
 ## Usage
 
-Generate a script from an outline (no rendering yet):
+### Automated batch mode (recommended)
+
+Drop outline JSONs into `inbox/` and run:
 
 ```bash
+npm run batch -- --upload
+```
+
+The batch processor:
+- Walks every `*.json` in `inbox/`
+- Computes a hash of each outline; **skips** any that already produced a `done` job in the ledger (idempotent — safe to re-run)
+- Generates the script, renders all segments, burns in captions, concatenates, and uploads to Box
+- Records every attempt in `work/ledger.json` (status, timestamps, Box link, error if any)
+- Exits with code 2 if any job failed
+
+Optional flags: `--concurrency N` (parallel jobs), `--no-captions`, `--inbox <dir>`.
+
+Inspect what's been produced:
+
+```bash
+npm run ledger
+```
+
+### Single-shot commands
+
+```bash
+# Script only (no rendering, no API cost for video providers)
 npm run script -- examples/sample-outline.json --out work/script.json
-```
 
-Produce a finished video end-to-end:
-
-```bash
+# Full produce with captions + Box upload
 npm run produce -- examples/sample-outline.json --upload
-```
 
-For scenes of kind `screen_capture` or `broll`, the pipeline expects an `assetPath` on each
-scene pointing to a local MP4. Workflow: run `script` first, hand-edit `work/script.json` to
-add `assetPath` for those scenes (and re-record narration if needed), then pass that edited
-script through `produceVideo` programmatically — or wire a `--script` flag into `cli.ts produce`.
-
-One-off narration clip:
-
-```bash
+# Standalone TTS
 npm run narrate -- "Welcome to the CRM tutorial." --out work/intro.mp3
-```
 
-Manual upload:
-
-```bash
+# Manual Box upload
 npm run upload -- output/some-video.mp4 --folder 0
 ```
+
+### Captions
+
+Captions are generated from the script (per-scene narration) and burned in by default.
+Disable with `--no-captions`. The pipeline writes a sidecar `.srt` to `work/<jobId>/`.
+
+### Screen-capture / b-roll scenes
+
+For `screen_capture` and `broll` scenes, the script must include an `assetPath`
+pointing to a local MP4. Workflow: run `npm run script` first, hand-edit the
+generated script to add `assetPath`, then call `produceVideo({ outline, ... })`
+programmatically with the edited script — or extend `cli.ts` to accept a
+pre-built script via `--script`.
 
 ## Cost ballpark (3-minute video)
 

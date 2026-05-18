@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { config } from "./config.js";
 import { writeScript } from "./scriptwriter.js";
@@ -10,6 +10,7 @@ import {
   muxAudioOver,
   probeDuration,
 } from "./compose/ffmpeg.js";
+import { burnInCaptions, writeSrt } from "./compose/captions.js";
 import { uploadToBox } from "./storage/box.js";
 import { Outline, type Script } from "./types.js";
 
@@ -17,12 +18,14 @@ export interface ProduceOptions {
   outline: Outline;
   jobId?: string;
   uploadToBoxOnFinish?: boolean;
+  burnCaptions?: boolean;
 }
 
 export interface ProduceResult {
   jobId: string;
   scriptPath: string;
   finalVideoPath: string;
+  srtPath?: string;
   boxFileId?: string;
   boxSharedLink?: string;
 }
@@ -73,6 +76,16 @@ export async function produceVideo(opts: ProduceOptions): Promise<ProduceResult>
   await concatSegments(segmentPaths, finalPath, path.join(workDir, "concat"));
 
   const result: ProduceResult = { jobId, scriptPath, finalVideoPath: finalPath };
+
+  if (opts.burnCaptions !== false) {
+    log(`[${jobId}] generating captions`);
+    const srtDest = path.join(workDir, `${jobId}.srt`);
+    const { path: srtPath } = await writeSrt(script, segmentPaths, srtDest);
+    result.srtPath = srtPath;
+    const captioned = path.join(workDir, `${jobId}.captioned.mp4`);
+    await burnInCaptions(finalPath, srtPath, captioned);
+    await rename(captioned, finalPath);
+  }
 
   if (opts.uploadToBoxOnFinish) {
     log(`[${jobId}] uploading to Box`);

@@ -4,6 +4,8 @@ import { config } from "./config.js";
 import { writeScript } from "./scriptwriter.js";
 import { narrate } from "./providers/elevenlabs.js";
 import { produceVideo, summarizeScript } from "./pipeline.js";
+import { runBatch } from "./batch.js";
+import { Ledger } from "./ledger.js";
 import { uploadToBox } from "./storage/box.js";
 import { Outline } from "./types.js";
 
@@ -11,7 +13,9 @@ function usage(): never {
   console.log(`Usage:
   npm run script   -- <outline.json> [--out script.json]
   npm run narrate  -- "Some narration text" --out work/clip.mp3
-  npm run produce  -- <outline.json> [--upload] [--job <id>]
+  npm run produce  -- <outline.json> [--upload] [--no-captions] [--job <id>]
+  npm run batch    -- [--inbox inbox] [--upload] [--no-captions] [--concurrency N]
+  npm run ledger
   npm run upload   -- <localFile> [--folder <boxFolderId>]
 `);
   process.exit(1);
@@ -61,8 +65,38 @@ async function main(): Promise<void> {
       outline,
       jobId: arg("--job"),
       uploadToBoxOnFinish: hasFlag("--upload"),
+      burnCaptions: !hasFlag("--no-captions"),
     });
     console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (command === "batch") {
+    const inboxDir = arg("--inbox") ?? "inbox";
+    const summary = await runBatch({
+      inboxDir,
+      uploadToBoxOnFinish: hasFlag("--upload"),
+      burnCaptions: !hasFlag("--no-captions"),
+      concurrency: Number(arg("--concurrency") ?? "1"),
+    });
+    console.log(JSON.stringify(summary, null, 2));
+    if (summary.failed.length > 0) process.exit(2);
+    return;
+  }
+
+  if (command === "ledger") {
+    const ledger = new Ledger(path.join(config.WORK_DIR, "ledger.json"));
+    await ledger.load();
+    const rows = ledger.list();
+    if (rows.length === 0) {
+      console.log("(no jobs yet)");
+      return;
+    }
+    for (const r of rows) {
+      const link = r.boxSharedLink ? ` ${r.boxSharedLink}` : "";
+      const err = r.error ? ` :: ${r.error}` : "";
+      console.log(`${r.status.padEnd(7)} ${r.jobId}${link}${err}`);
+    }
     return;
   }
 
