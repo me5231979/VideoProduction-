@@ -10,7 +10,7 @@ import { Outline } from "./types.js";
 export interface BatchOptions {
   inboxDir: string;
   ledgerPath?: string;
-  uploadToBoxOnFinish?: boolean;
+  saveToDesktopOnFinish?: boolean;
   burnCaptions?: boolean;
   concurrency?: number;
 }
@@ -82,7 +82,7 @@ export async function runBatch(opts: BatchOptions): Promise<BatchSummary> {
       const result = await produceVideo({
         outline,
         jobId,
-        uploadToBoxOnFinish: opts.uploadToBoxOnFinish,
+        saveToDesktopOnFinish: opts.saveToDesktopOnFinish,
         burnCaptions: opts.burnCaptions,
       });
       await ledger.upsert({
@@ -93,8 +93,7 @@ export async function runBatch(opts: BatchOptions): Promise<BatchSummary> {
         startedAt,
         finishedAt: new Date().toISOString(),
         finalVideoPath: result.finalVideoPath,
-        boxFileId: result.boxFileId,
-        boxSharedLink: result.boxSharedLink,
+        desktopPath: result.desktopPath,
       });
       summary.produced.push(jobId);
       log(`done ${jobId}`);

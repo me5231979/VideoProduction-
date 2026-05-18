@@ -10,8 +10,7 @@ export interface LedgerEntry {
   startedAt: string;
   finishedAt?: string;
   finalVideoPath?: string;
-  boxFileId?: string;
-  boxSharedLink?: string;
+  desktopPath?: string;
   error?: string;
 }
 

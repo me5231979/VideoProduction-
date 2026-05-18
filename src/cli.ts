@@ -6,17 +6,17 @@ import { narrate } from "./providers/elevenlabs.js";
 import { produceVideo, summarizeScript } from "./pipeline.js";
 import { runBatch } from "./batch.js";
 import { Ledger } from "./ledger.js";
-import { uploadToBox } from "./storage/box.js";
+import { resolveDesktopDir, saveToDesktop } from "./storage/desktop.js";
 import { Outline } from "./types.js";
 
 function usage(): never {
   console.log(`Usage:
   npm run script   -- <outline.json> [--out script.json]
   npm run narrate  -- "Some narration text" --out work/clip.mp3
-  npm run produce  -- <outline.json> [--upload] [--no-captions] [--job <id>]
-  npm run batch    -- [--inbox inbox] [--upload] [--no-captions] [--concurrency N]
+  npm run produce  -- <outline.json> [--no-desktop] [--no-captions] [--job <id>]
+  npm run batch    -- [--inbox inbox] [--no-desktop] [--no-captions] [--concurrency N]
   npm run ledger
-  npm run upload   -- <localFile> [--folder <boxFolderId>]
+  npm run save     -- <localFile>          # copy a finished video to ${resolveDesktopDir()}
 `);
   process.exit(1);
 }
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const result = await produceVideo({
       outline,
       jobId: arg("--job"),
-      uploadToBoxOnFinish: hasFlag("--upload"),
+      saveToDesktopOnFinish: !hasFlag("--no-desktop"),
       burnCaptions: !hasFlag("--no-captions"),
     });
     console.log(JSON.stringify(result, null, 2));
@@ -75,7 +75,7 @@ async function main(): Promise<void> {
     const inboxDir = arg("--inbox") ?? "inbox";
     const summary = await runBatch({
       inboxDir,
-      uploadToBoxOnFinish: hasFlag("--upload"),
+      saveToDesktopOnFinish: !hasFlag("--no-desktop"),
       burnCaptions: !hasFlag("--no-captions"),
       concurrency: Number(arg("--concurrency") ?? "1"),
     });
@@ -93,18 +93,17 @@ async function main(): Promise<void> {
       return;
     }
     for (const r of rows) {
-      const link = r.boxSharedLink ? ` ${r.boxSharedLink}` : "";
+      const dest = r.desktopPath ? ` -> ${r.desktopPath}` : "";
       const err = r.error ? ` :: ${r.error}` : "";
-      console.log(`${r.status.padEnd(7)} ${r.jobId}${link}${err}`);
+      console.log(`${r.status.padEnd(7)} ${r.jobId}${dest}${err}`);
     }
     return;
   }
 
-  if (command === "upload") {
+  if (command === "save") {
     const file = rest.find((a) => !a.startsWith("--"));
     if (!file) usage();
-    const folder = arg("--folder") ?? config.BOX_DESTINATION_FOLDER_ID;
-    const result = await uploadToBox(file, folder);
+    const result = await saveToDesktop(file);
     console.log(JSON.stringify(result, null, 2));
     return;
   }

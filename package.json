@@ -16,12 +16,11 @@
     "narrate": "node --import tsx/esm src/cli.ts narrate",
     "batch": "node --import tsx/esm src/cli.ts batch",
     "ledger": "node --import tsx/esm src/cli.ts ledger",
-    "upload": "node --import tsx/esm src/cli.ts upload"
+    "save": "node --import tsx/esm src/cli.ts save"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "box-node-sdk": "^3.7.0",
     "dotenv": "^16.4.5",
     "fluent-ffmpeg": "^2.1.3",
     "undici": "^6.20.0",

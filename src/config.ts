@@ -24,8 +24,7 @@ const Env = z.object({
   ELEVENLABS_VOICE_ID: z.string().default("21m00Tcm4TlvDq8ikWAM"),
   ELEVENLABS_MODEL_ID: z.string().default("eleven_multilingual_v2"),
 
-  BOX_DEVELOPER_TOKEN: optionalKey,
-  BOX_DESTINATION_FOLDER_ID: z.string().default("0"),
+  DESKTOP_DIR: z.string().default(""),
 
   WORK_DIR: z.string().default("./work"),
   OUTPUT_DIR: z.string().default("./output"),

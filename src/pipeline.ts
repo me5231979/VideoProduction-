@@ -11,13 +11,13 @@ import {
   probeDuration,
 } from "./compose/ffmpeg.js";
 import { burnInCaptions, writeSrt } from "./compose/captions.js";
-import { uploadToBox } from "./storage/box.js";
+import { saveToDesktop } from "./storage/desktop.js";
 import { Outline, type Script } from "./types.js";
 
 export interface ProduceOptions {
   outline: Outline;
   jobId?: string;
-  uploadToBoxOnFinish?: boolean;
+  saveToDesktopOnFinish?: boolean;
   burnCaptions?: boolean;
 }
 
@@ -26,8 +26,7 @@ export interface ProduceResult {
   scriptPath: string;
   finalVideoPath: string;
   srtPath?: string;
-  boxFileId?: string;
-  boxSharedLink?: string;
+  desktopPath?: string;
 }
 
 export async function produceVideo(opts: ProduceOptions): Promise<ProduceResult> {
@@ -87,11 +86,11 @@ export async function produceVideo(opts: ProduceOptions): Promise<ProduceResult>
     await rename(captioned, finalPath);
   }
 
-  if (opts.uploadToBoxOnFinish) {
-    log(`[${jobId}] uploading to Box`);
-    const up = await uploadToBox(finalPath);
-    result.boxFileId = up.fileId;
-    result.boxSharedLink = up.sharedLink;
+  if (opts.saveToDesktopOnFinish !== false) {
+    log(`[${jobId}] saving to desktop`);
+    const saved = await saveToDesktop(finalPath, `${jobId}.mp4`);
+    result.desktopPath = saved.destinationPath;
+    log(`[${jobId}] -> ${saved.destinationPath}`);
   }
 
   log(`[${jobId}] done -> ${finalPath}`);
